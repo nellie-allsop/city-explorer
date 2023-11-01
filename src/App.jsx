@@ -1,52 +1,72 @@
-import './App.css'
-import axios from "axios"
-import { useState } from 'react'
+import "./App.css";
+import axios from "axios";
+import { useState } from "react";
 
-const API_KEY = import.meta.env.VITE_API_KEY
+const API_KEY = import.meta.env.VITE_API_KEY;
 
 function App() {
-  const [location, setLocation] = useState({})
-  const [search, setSearch] = useState("")
-  const [map, setMap] = useState()
+	const [location, setLocation] = useState({});
+	const [search, setSearch] = useState("");
+	const [number, setNumber] = useState(10);
+	const [weather, setWeather] = useState([]);
 
-  function handleChange(event) {
-    setSearch(event.target.value)
-  }
+	function handleChange(event) {
+		setSearch(event.target.value);
+	}
 
-  async function getLocation(event){
-    event.preventDefault()
+	async function getLocation(event) {
+		event.preventDefault();
 
-    const API = `https://eu1.locationiq.com/v1/search?q=${search}&key=${API_KEY}&format=json`
+		const API = `https://eu1.locationiq.com/v1/search?q=${search}&key=${API_KEY}&format=json`;
 
-    const res = await axios.get(API)
+		const res = await axios.get(API);
 
-    setLocation(res.data[0])
+		setLocation(res.data[0]);
 
-    getMap(res.data[0].lat, res.data[0].lon)
-  }
+		getWeather(res.data[0]);
+	}
 
-function getMap(lat, lon){
+	async function getWeather(tempLocation) {
+		const API = `http://localhost:8080/weather?lat=${tempLocation.lat}&lon=${tempLocation.lon}&searchQuery=${search}`;
+		const res = await axios.get(API);
+		setWeather(res.data);
+	}
 
-  const displayMap = `https://maps.locationiq.com/v3/staticmap?key=${API_KEY}&center=${lat},${lon}&zoom=14&size=1000x1000&format=png&maptype=roadmap`
+	function handleNumber(mod) {
+		setNumber(number + mod);
+	}
 
-setMap(displayMap)
+	return (
+		<>
+			<form onSubmit={getLocation}>
+				<input onChange={handleChange} placeholder="City name" />
+				<button>Explore!</button>
+			</form>
+
+			{location.lat && (
+				<div>
+					<p>Latitude: {location.lat}</p>
+					<p>Longitude: {location.lon}</p>
+					<button onClick={() => handleNumber(-1)}>Zoom out</button>
+					<span>{number}</span>
+					<button onClick={() => handleNumber(1)}>Zoom in</button>
+					<img
+						src={`https://maps.locationiq.com/v3/staticmap?key=${API_KEY}&center=${location.lat},${location.lon}&zoom=${number}&format=png`}
+					/>
+				</div>
+			)}
+
+			<h2>{location.display_name}</h2>
+      {console.log(weather)}
+			{weather.map((day) => {
+				return (
+					<p key={day.date}>
+						The weather on {day.date} is {day.description}
+					</p>
+				);
+			})}
+		</>
+	);
 }
 
-  return (
-    <>
-      <form onSubmit={getLocation}>
-        <input onChange={handleChange} placeholder="City name" />
-<button>Explore!</button>
-      </form>
-
-      <h2>{location.display_name}</h2>
-      <p>{location.lat}</p>
-      <p>{location.lon}</p>
-      <img src={map} />
-    </>
-  )
- }
-
-export default App
-
-// https://maps.locationiq.com/v3/staticmap
+export default App;
